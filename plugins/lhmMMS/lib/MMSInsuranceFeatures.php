@@ -67,20 +67,41 @@ class MMSInsuranceFeatures
 			$po_object->removeAttributes('insurance_value_historic');
 		}
 
-		$currentDate = date('Y-m-d');
+
 		// Alten Wert zur Historie hinzufügen
 		foreach ($oldVals as $oid => $attrList) {
 			foreach ($attrList as $aid => $vals) {
-				$historyDate = $vals['current_date'] ?? '';
-				$historyValue = $vals['current_value_eur'] ?? '';
-				$historyRemark = $vals['current_remark'] ?? '';
+                // Aktuelle Attributwerte bereinigen und als Strings normalisieren
+                $historyDate = trim((string)($vals['current_date'] ?? ''));
+                $historyValue = trim((string)($vals['current_value_eur'] ?? ''));
+                $historyRemark = trim((string)($vals['current_remark'] ?? ''));
 
-				if ($historyDate === '' && $historyValue === '' && $historyRemark === '') {
-					continue;
-				}
+                // Historieneinträge ohne gültiges Datum werden übersprungen.
+                // In seltenen Fällen liefert CollectiveAccess einen leeren oder
+                // ungültigen current_date-Wert. Um fehlerhafte Datumswerte
+                // (z. B. 01.01.1970 oder automatisch gesetzte Ersatzdaten)
+                if ($historyDate === '') {
+                    continue;
+                }
 
-				$date_raw = ($historyDate !== '') ? $historyDate : $currentDate;
-				$date_str = date('Y-m-d', strtotime($date_raw));
+                // Ursprünglichen Datumswert für die weitere Verarbeitung übernehmen
+                $date_raw = $historyDate;
+
+                // Datumsformat aus dem UI (dd/mm/yyyy) verarbeiten
+                $dt = DateTime::createFromFormat('d/m/Y', $date_raw);
+
+                // Fallback für bereits normalisierte Datumswerte (yyyy-mm-dd)
+                if (!$dt) {
+                    $dt = DateTime::createFromFormat('Y-m-d', $date_raw);
+                }
+
+                // Ungültige Datumswerte nicht in die Historie übernehmen
+                if (!$dt) {
+                    continue;
+                }
+
+                // Einheitliches Datenbankformat erzeugen
+                $date_str = $dt->format('Y-m-d');
 
 				$value_float = mmsExtractFloatFromCurrencyValue((string)$historyValue);
 				$value_currency = mmsFloatToCurrencyValue($value_float);
