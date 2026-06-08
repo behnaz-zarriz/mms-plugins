@@ -169,7 +169,7 @@ class AdminToolsController extends ActionController {
 				default:
 					$vs_value = $va_row['value_longtext1'];
 			}
-
+            $vs_value = trim($vs_value);
 			$va_value_counts[$vs_value]++;
 			$va_value_records[$vs_value][] = $va_row['value_id'];
 		}
