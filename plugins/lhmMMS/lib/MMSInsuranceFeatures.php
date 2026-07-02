@@ -52,11 +52,13 @@ class MMSInsuranceFeatures
 		$newVals = $po_object->get('insurance_value_current', ['returnAsArray' => true, 'returnWithStructure' => true, 'returnWithIdentifiers' => true   // wichtig: attribute_id mitnehmen
 		]);
 
-		// Keine Änderung oder keine alten/neuen Werte → kein Handlungsbedarf
-		if (!$oldVals || !$newVals || json_encode($oldVals) === json_encode($newVals)) {
-			unset(self::$oldInsuranceVals[$id]);
-			return;
-		}
+        // Keine alten Werte oder keine Änderung → kein Handlungsbedarf.
+        // Wenn der aktuelle Versicherungswert gelöscht wurde, ist $newVals leer;
+        // in diesem Fall soll der alte Wert trotzdem in die Historie übernommen werden.
+        if (!$oldVals || json_encode($oldVals) === json_encode($newVals)) {
+            unset(self::$oldInsuranceVals[$id]);
+            return;
+        }
 
 		$historicValues = $po_object->get('insurance_value_historic', ['returnAsArray' => true]);
 		// Prüft, ob 'insurance_value_historic' nur leere Platzhalter enthält (z. B. ';;') und entfernt es in diesem Fall
